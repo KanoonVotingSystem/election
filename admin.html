@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin — Election Control</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    /* Clean, modern admin theme */
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#94a3b8; --accent:#06b6d4; --accent-2:#34d399; --danger:#ef4444; --glass: rgba(255,255,255,0.04);
+      --radius:14px; --pad:18px; --maxw:1100px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; background:linear-gradient(180deg,#071021 0%, #0b1220 60%); color:#e6eef6; min-height:100vh; padding:28px; display:flex; align-items:flex-start; justify-content:center}
+    .wrap{width:100%; max-width:var(--maxw)}
+    header{display:flex; align-items:center; gap:18px; margin-bottom:18px}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2)); display:flex;align-items:center;justify-content:center;font-weight:700;color:#022;box-shadow:0 8px 40px rgba(3,7,18,.6)}
+    h1{font-size:1.25rem;margin:0}
+    p.lead{color:var(--muted);margin:0}
+    .grid{display:grid;grid-template-columns:360px 1fr;gap:18px}
+
+    /* Card */
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); padding:var(--pad); border-radius:var(--radius); box-shadow: 0 10px 40px rgba(2,6,23,.6)}
+
+    /* Auth */
+    .auth h2{margin:0 0 8px}
+    .field{display:flex;flex-direction:column;margin-bottom:12px}
+    label{font-size:.85rem;color:var(--muted);margin-bottom:6px}
+    input[type=email], input[type=password]{padding:10px 12px;border-radius:10px;border:none;background:var(--glass);color:inherit}
+    button.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2)); color:#032; border:none;padding:10px 12px;border-radius:10px;font-weight:700;cursor:pointer}
+    button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:10px;cursor:pointer}
+    .muted{color:var(--muted)}
+
+    /* Admin panel */
+    .admin-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .info{display:flex;gap:12px;align-items:center}
+    .badge{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.03);font-weight:600}
+    .controls{display:flex;gap:8px;align-items:center}
+    .toggle{background:linear-gradient(90deg,#0ea5e9,#34d399);color:#012;padding:8px 12px;border-radius:10px;border:none;cursor:pointer}
+    .toggle.closed{background:linear-gradient(90deg,#334155,#0b1220);color:var(--muted)}
+
+    /* Results */
+    .stats{display:flex;gap:12px;margin-top:12px}
+    .stat{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;min-width:130px;text-align:center}
+    .stat .num{font-size:1.4rem;font-weight:700}
+
+    table{width:100%;border-collapse:collapse;margin-top:12px}
+    th,td{padding:10px;text-align:left;border-bottom:1px dashed rgba(255,255,255,0.03)}
+    th{font-size:.85rem;color:var(--muted);}
+
+    footer{margin-top:18px;color:var(--muted);font-size:.85rem}
+
+    @media (max-width:880px){ .grid{grid-template-columns:1fr; } .logo{display:none} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">EV</div>
+      <div>
+        <h1>Election Admin</h1>
+        <p class="lead">Secure control panel — sign in with email &amp; password to manage voting.</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left: Auth / Controls -->
+      <div class="card">
+        <div id="authArea" class="auth">
+          <h2>Admin sign in</h2>
+          <p class="muted">Use your admin account (email &amp; password).</p>
+          <div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="username" /></div>
+          <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password"/></div>
+          <div style="display:flex;gap:8px">
+            <button id="signInBtn" class="primary">Sign in</button>
+            <button id="signUpBtn" class="ghost">Create account</button>
+          </div>
+          <p id="authMsg" class="muted" style="margin-top:12px"></p>
+        </div>
+
+        <div id="adminControls" class="muted" style="display:none;margin-top:12px">
+          <div class="admin-head">
+            <div class="info"><div class="badge" id="userBadge">—</div><div id="userEmail" style="font-weight:600"></div></div>
+            <div class="controls">
+              <button id="signOutBtn" class="ghost">Sign out</button>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div class="muted">Voting state</div>
+            <div style="display:flex;gap:10px;align-items:center;margin-top:8px">
+              <div id="stateText" class="badge">CLOSED</div>
+              <button id="openCloseBtn" class="toggle closed">Open Voting</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Results -->
+      <div class="card">
+        <div class="admin-head">
+          <h2>Live Results</h2>
+          <div class="muted">Realtime • Table + chart</div>
+        </div>
+
+        <div class="stats" style="margin-top:8px">
+          <div class="stat"><div class="num" id="totalVoters">0</div><div class="muted">Total eligible</div></div>
+          <div class="stat"><div class="num" id="votesCast">0</div><div class="muted">Voters participated</div></div>
+          <div class="stat"><div class="num" id="candidatesCount">0</div><div class="muted">Candidates</div></div>
+        </div>
+
+        <table aria-live="polite">
+          <thead><tr><th>Candidate</th><th>Votes</th><th>% of voters</th></tr></thead>
+          <tbody id="resultsTbody"></tbody>
+        </table>
+
+        <canvas id="adminChart" height="120" style="margin-top:12px"></canvas>
+
+        <footer>Only signed-in admins listed in <code>public.admins</code> may change voting state.</footer>
+      </div>
+    </div>
+  </div>
+
+<script>
+// ----- CONFIG - paste your values -----
+const SUPABASE_URL = 'https://mbkbiwzlzwunubdyslmc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ia2Jpd3psend1bnViZHlzbG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxOTgxMzIsImV4cCI6MjA3Mzc3NDEzMn0.894O4z994vQ60g4m5Csr-0TbgiH3D8hlszNY0sUMIRU';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// --------------------------------------
+
+let adminChart;
+
+async function signIn(){
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const msg = document.getElementById('authMsg');
+  msg.textContent = '';
+  if(!email || !password){ msg.textContent = 'Enter email and password'; return; }
+  document.getElementById('signInBtn').disabled = true;
+  try{
+    const res = await sb.auth.signInWithPassword({ email, password });
+    if(res.error) throw res.error;
+    // show panel
+    onSignedIn(res.data.user);
+  }catch(e){
+    console.error(e);
+    msg.textContent = e.message || String(e);
+  }finally{ document.getElementById('signInBtn').disabled = false; }
+}
+
+async function signUp(){
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const msg = document.getElementById('authMsg');
+  msg.textContent = '';
+  if(!email || !password){ msg.textContent = 'Enter email and password'; return; }
+  document.getElementById('signUpBtn').disabled = true;
+  try{
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if(error) throw error;
+    msg.textContent = 'Account created. You may need to confirm email depending on your project settings.';
+    // optionally auto sign-in
+    if(data && data.user) onSignedIn(data.user);
+  }catch(e){ console.error(e); msg.textContent = e.message || String(e); }
+  finally{ document.getElementById('signUpBtn').disabled = false; }
+}
+
+async function signOut(){ await sb.auth.signOut(); window.location.reload(); }
+
+document.getElementById('signInBtn').addEventListener('click', signIn);
+document.getElementById('signUpBtn').addEventListener('click', signUp);
+document.getElementById('signOutBtn').addEventListener('click', signOut);
+
+sb.auth.onAuthStateChange((event, session) => {
+  if(session && session.user) onSignedIn(session.user);
+});
+
+async function onSignedIn(user){
+  document.getElementById('authArea').style.display = 'none';
+  document.getElementById('adminControls').style.display = 'block';
+  document.getElementById('userEmail').textContent = user.email || '(no-email)';
+  document.getElementById('userBadge').textContent = user.id?.slice(0,8) || '';
+  await refreshAll();
+}
+
+async function refreshAll(){ await refreshState(); await refreshResults(); subscribeRealtime(); }
+
+async function refreshState(){
+  try{
+    const { data, error } = await sb.from('election_state').select('*').eq('id','current').single();
+    if(error){ console.error(error); return; }
+    const open = data.voting_open;
+    const stateText = document.getElementById('stateText');
+    const toggle = document.getElementById('openCloseBtn');
+    stateText.textContent = open ? 'OPEN' : 'CLOSED';
+    if(open){ toggle.textContent='Close Voting'; toggle.classList.remove('closed'); } else { toggle.textContent='Open Voting'; toggle.classList.add('closed'); }
+  }catch(e){ console.error(e); }
+}
+
+async function toggleVoting(){
+  const currentOpen = document.getElementById('stateText').textContent === 'OPEN';
+  try{
+    const { error } = await sb.rpc('set_voting_state', { p_open: !currentOpen });
+    if(error) throw error;
+    await refreshState();
+  }catch(e){ alert('Failed to change state: ' + (e.message || e)); }
+}
+
+async function refreshResults(){
+  try{
+    const { data: stats } = await sb.rpc('get_election_stats');
+    const s = (stats && stats[0]) || { total_voters:0, votes_cast:0 };
+    document.getElementById('totalVoters').textContent = s.total_voters;
+    document.getElementById('votesCast').textContent = s.votes_cast;
+
+    const { data: cands } = await sb.from('candidates').select('*').order('name');
+    document.getElementById('candidatesCount').textContent = (cands && cands.length) || 0;
+    const tbody = document.getElementById('resultsTbody'); tbody.innerHTML = '';
+    const labels = [];
+    const values = [];
+    (cands||[]).forEach(c=>{
+      const pct = s.votes_cast ? (((c.votes||0) * 100) / s.votes_cast).toFixed(1) : '0.0';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${c.name}</td><td>${c.votes||0}</td><td>${pct}%</td>`;
+      tbody.appendChild(tr);
+      labels.push(c.name); values.push(c.votes||0);
+    });
+
+    // chart
+    const ctx = document.getElementById('adminChart');
+    if(adminChart){ adminChart.data.labels = labels; adminChart.data.datasets[0].data = values; adminChart.update(); }
+    else{ adminChart = new Chart(ctx, { type:'bar', data:{ labels, datasets:[{label:'Votes', data:values}] }, options:{responsive:true, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}}}}); }
+  }catch(e){ console.error(e); }
+}
+
+function subscribeRealtime(){
+  sb.channel('admin_cands').on('postgres_changes',{event:'*',schema:'public',table:'candidates'},()=> refreshResults()).subscribe();
+  sb.channel('admin_state').on('postgres_changes',{event:'*',schema:'public',table:'election_state'},()=> refreshState()).subscribe();
+}
+
+// wire toggle
+document.getElementById('openCloseBtn').addEventListener('click', toggleVoting);
+
+// boot: check if already signed in
+(async function(){
+  try{
+    const { data: { session } } = await sb.auth.getSession();
+    if(session && session.user) onSignedIn(session.user);
+  }catch(e){ /* ignore */ }
+})();
+</script>
+</body>
+</html>

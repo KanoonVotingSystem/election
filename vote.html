@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vote — Anonymous Election</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    :root{
+      --bg0:#041024; --bg1:#071426; --card:#071826; --muted:#94a3b8; --accent:#06b6d4; --accent-2:#34d399; --glass: rgba(255,255,255,0.03);
+      --radius:12px; --pad:18px; --container:1080px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial; background:linear-gradient(180deg,var(--bg0),var(--bg1)); color:#e6eef6; min-height:100vh; padding:28px; display:flex; align-items:flex-start; justify-content:center}
+    .wrap{width:100%; max-width:var(--container)}
+    header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+    .logo{width:60px;height:60px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:left;justify-content:center;font-weight:800;color:#012;box-shadow:0 10px 30px rgba(2,6,23,.6)}
+    h1{margin:0;font-size:1.3rem}
+    p.lead{margin:0;color:var(--muted)}
+
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:18px}
+    @media (max-width:980px){ .grid{grid-template-columns:1fr} .sidebar-card{order:2} }
+
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); padding:var(--pad); border-radius:var(--radius); box-shadow:0 10px 40px rgba(2,6,23,.6)}
+
+    /* Form */
+    label.field{display:flex;flex-direction:column;margin-bottom:12px}
+    label.field span{font-size:.85rem;color:var(--muted);margin-bottom:8px}
+    input[type=password]{padding:10px;border-radius:10px;border:none;background:var(--glass);color:inherit}
+
+    /* Force a single-column list of candidates */
+    .candidates{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+    .cand{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02);cursor:pointer}
+    .cand input{width:18px;height:18px}
+
+    .note{font-size:.85rem;color:var(--muted);margin-top:8px}
+    .actions{display:flex;align-items:center;gap:12px;margin-top:12px}
+    button.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#012;border:none;padding:10px 14px;border-radius:10px;font-weight:700;cursor:pointer}
+    button.primary[disabled]{opacity:.5;cursor:not-allowed}
+
+    .status{min-height:20px}
+
+    /* Sidebar */
+    .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+    .stat{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;text-align:center}
+    .stat .num{font-size:1.2rem;font-weight:800}
+
+    canvas{width:100%!important}
+    footer{margin-top:18px;color:var(--muted);font-size:.85rem;text-align:center}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo"></div>
+      <div>
+        <h1>سامانه انتخابات هیأت موسس کانون صنفی استادان علوم پایه وزارت بهداشت</h1>
+        <p class="lead"></p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left: voting card -->
+      <div class="card">
+        <h2>فرم رأی گیری</h2>
+        <form id="voteForm">
+          <label class="field"><span>رأی گیری فقط با کد ملی شما امکان پذیر است</span><input id="voterId" type="password" placeholder="کد ملی خود را اینجا وارد نمایید" autocomplete="one-time-code" required /></label>
+
+          <div><div class="note">لیست کاندیداهای محترم</div>
+            <div id="candidateList" class="candidates"></div>
+          </div>
+
+          <div class="note">پس از انتخاب کاندیداهای مورد نظر خود -حداکثر 3 نفر- کلید ثبت رای را فشار دهید</div>
+
+          <div class="actions">
+            <button id="voteBtn" class="primary" type="submit">ثبت رای</button>
+            <div id="status" class="status"></div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Right: live results -->
+      <div class="card sidebar-card">
+        <h3>نتایج زنده</h3>
+        <div class="stat-grid">
+          <div class="stat"><div class="num" id="totalVoters">0</div><div class="muted">Total eligible</div></div>
+          <div class="stat"><div class="num" id="votesCast">0</div><div class="muted">Voters participated</div></div>
+        </div>
+
+        <div style="margin-top:6px">
+          <table style="width:100%;border-collapse:collapse;margin-bottom:8px">
+            <thead><tr><th style="color:var(--muted);text-align:left;padding:6px">Candidate</th><th style="color:var(--muted);text-align:right;padding:6px">Votes</th></tr></thead>
+            <tbody id="resultsTable"></tbody>
+          </table>
+        </div>
+
+        <canvas id="resultsChart" height="160"></canvas>
+        <p class="note" style="margin-top:8px">نتایج به صورت زنده بروز رسانی می شود</p>
+      </div>
+    </div>
+
+    <footer>Privacy: only SHA-256 hashes of IDs are stored. Votes are aggregated by candidate only.</footer>
+  </div>
+
+<script>
+// ----- CONFIG: paste your Supabase info -----
+const SUPABASE_URL = 'https://mbkbiwzlzwunubdyslmc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ia2Jpd3psend1bnViZHlzbG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxOTgxMzIsImV4cCI6MjA3Mzc3NDEzMn0.894O4z994vQ60g4m5Csr-0TbgiH3D8hlszNY0sUMIRU';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// -------------------------------------------
+
+let candidates = [];
+let chart;
+
+// extract trailing number from candidate name, e.g. "candidate 12" => 12
+function trailingNumber(name){
+  const m = name.match(/(\d+)\s*$/);
+  return m ? parseInt(m[1],10) : null;
+}
+
+async function sha256Hex(str){
+  const buf = new TextEncoder().encode(str);
+  const h = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(h)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function el(tag, attrs={}, children=[]) {
+  const e = document.createElement(tag);
+  Object.entries(attrs).forEach(([k,v])=>{ if(k==='class') e.className=v; else if(k==='for') e.htmlFor=v; else e.setAttribute(k,v); });
+  children.forEach(c=> e.append(typeof c === 'string' ? document.createTextNode(c) : c));
+  return e;
+}
+
+function sortCandidatesArray(arr){
+  // sort by trailing number if present, otherwise by name
+  return arr.slice().sort((a,b)=>{
+    const na = trailingNumber(a.name);
+    const nb = trailingNumber(b.name);
+    if(na!==null && nb!==null) return na - nb;
+    if(na!==null && nb===null) return -1;
+    if(na===null && nb!==null) return 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function renderCandidates(){
+  const list = document.getElementById('candidateList');
+  list.innerHTML = '';
+  const sorted = sortCandidatesArray(candidates);
+  sorted.forEach(c=>{
+    const id = 'cand_' + c.id;
+    const input = el('input', { type:'checkbox', name:'candidate', value:c.id, id });
+    const label = el('label', { class:'cand', for:id }, [ input, el('div', {}, [ c.name ]) ]);
+    list.appendChild(label);
+  });
+}
+
+function renderResultsTable(stats){
+  const tbody = document.getElementById('resultsTable'); tbody.innerHTML = '';
+  const sorted = sortCandidatesArray(candidates);
+  sorted.forEach(c=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td style="padding:6px">${c.name}</td><td style="padding:6px;text-align:right">${c.votes||0}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderKPIs(stats){
+  document.getElementById('totalVoters').textContent = stats?.total_voters || 0;
+  document.getElementById('votesCast').textContent = stats?.votes_cast || 0;
+}
+
+function renderChart(){
+  const ctx = document.getElementById('resultsChart');
+  const sorted = sortCandidatesArray(candidates);
+  const labels = sorted.map(c=>c.name);
+  const data = sorted.map(c=>c.votes||0);
+  if(chart){ chart.data.labels = labels; chart.data.datasets[0].data = data; chart.update(); return; }
+  chart = new Chart(ctx, { type:'bar', data:{ labels, datasets:[{ label:'Votes', data } ]}, options:{ responsive:true, plugins:{ legend:{ display:false } }, scales:{ y:{ beginAtZero:true } } } });
+}
+
+async function loadCandidates(){
+  // fetch candidates and sort client-side; ordering by name might be alphabetic, so we apply numeric sort
+  const { data, error } = await sb.from('candidates').select('*');
+  if(error){ console.error(error); return; }
+  candidates = data || [];
+  renderCandidates();
+}
+
+async function fetchStats(){
+  const { data, error } = await sb.rpc('get_election_stats');
+  if(error){ console.error(error); return { total_voters:0, votes_cast:0 }; }
+  return data[0] || { total_voters:0, votes_cast:0 };
+}
+
+async function updateResults(){
+  const stats = await fetchStats();
+  renderKPIs(stats);
+  // refresh candidate data (votes) then render
+  const { data } = await sb.from('candidates').select('*');
+  if(data) candidates = data;
+  renderResultsTable(stats);
+  renderChart();
+}
+
+function subscribeRealtime(){
+  sb.channel('candidates_rt').on('postgres_changes', { event:'*', schema:'public', table:'candidates' }, () => updateResults()).subscribe();
+  sb.channel('state_rt').on('postgres_changes', { event:'*', schema:'public', table:'election_state' }, () => { /* server enforces open/closed */ }).subscribe();
+}
+
+async function submitVote(ev){
+  ev.preventDefault();
+  const raw = document.getElementById('voterId').value.trim();
+  const selected = Array.from(document.querySelectorAll('input[name="candidate"]:checked')).map(i=>i.value);
+  if(!raw || selected.length === 0){ document.getElementById('status').textContent = 'کدملی خود را وارد نمایید و حداقل یک کاندیدا را انتخاب نمایید'; return; }
+  if(selected.length > 2){ document.getElementById('status').textContent = 'تعداد کاندیداهای انتخابی شما بیش از حد مجاز است'; return; }
+  const btn = document.getElementById('voteBtn'); btn.disabled = true; document.getElementById('status').textContent = 'Submitting...';
+  try{
+    const p_hash = await sha256Hex(raw);
+    const { error } = await sb.rpc('vote_with_hash', { p_hash, p_candidates: selected });
+    if(error) throw error;
+    document.getElementById('status').textContent = 'رأی شما با موفقیت ثبت شد';
+    document.getElementById('voteForm').reset();
+    updateResults();
+  }catch(e){
+    console.error(e);
+    document.getElementById('status').textContent = e.message || String(e);
+  }finally{ btn.disabled = false; }
+}
+
+document.getElementById('voteForm').addEventListener('submit', submitVote);
+
+// boot
+loadCandidates().then(updateResults);
+subscribeRealtime();
+</script>
+</body>
+</html>
