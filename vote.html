@@ -27,7 +27,25 @@
     /* Form */
     label.field{display:flex;flex-direction:column;margin-bottom:12px}
     label.field span{font-size:.85rem;color:var(--muted);margin-bottom:8px}
-    input[type=password]{padding:10px;border-radius:10px;border:none;background:var(--glass);color:inherit}
+    input[type=text] {
+      padding:10px;
+      border-radius:10px;
+      border:1px solid var(--accent);
+      background:rgba(255,255,255,0.05);
+      color:inherit;
+      outline:none;
+      transition:border 0.2s, box-shadow 0.2s;
+    }
+    input[type=text]::placeholder {
+      color:var(--muted);
+      opacity:0.85;
+      letter-spacing:0.5px;
+    }
+    input[type=text]:focus {
+      border-color:var(--accent-2);
+      box-shadow:0 0 6px var(--accent-2);
+      background:rgba(255,255,255,0.08);
+    }
 
     /* Force a single-column list of candidates */
     .candidates{display:flex;flex-direction:column;gap:8px;margin-top:8px}
@@ -65,7 +83,7 @@
       <div class="card">
         <h2>فرم رأی گیری</h2>
         <form id="voteForm">
-          <label class="field"><span>رأی گیری فقط با شماره تماس شما امکان پذیر است</span><input id="voterId" type="password" placeholder="شماره تماس خود را بدون رقم صفر اول اینجا وارد نمایید" autocomplete="one-time-code" required /></label>
+          <label class="field"><span>رأی گیری فقط با شماره تماس شما امکان پذیر است</span><input id="voterId" type="text" placeholder="شماره تماس خود را بدون رقم صفر اول اینجا وارد نمایید" autocomplete="one-time-code" required /></label>
 
           <div><div class="note">لیست کاندیداهای محترم</div>
             <div id="candidateList" class="candidates"></div>
@@ -200,8 +218,8 @@ async function updateResults(){
   // refresh candidate data (votes) then render
   const { data } = await sb.from('candidates').select('*');
   if(data) candidates = data;
-  renderResultsTable(stats);
-  renderChart();
+  //renderResultsTable(stats);
+  //renderChart();
 }
 
 function subscribeRealtime(){
@@ -237,6 +255,7 @@ subscribeRealtime();
 </script>
 </body>
 </html>
+
 
 
 
