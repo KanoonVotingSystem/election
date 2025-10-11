@@ -65,7 +65,7 @@
       <div class="card">
         <h2>فرم رأی گیری</h2>
         <form id="voteForm">
-          <label class="field"><span>رأی گیری فقط با کد ملی شما امکان پذیر است</span><input id="voterId" type="password" placeholder="کد ملی خود را اینجا وارد نمایید" autocomplete="one-time-code" required /></label>
+          <label class="field"><span>رأی گیری فقط با شماره تماس شما امکان پذیر است</span><input id="voterId" type="password" placeholder="شماره تماس خود را اینجا وارد نمایید" autocomplete="one-time-code" required /></label>
 
           <div><div class="note">لیست کاندیداهای محترم</div>
             <div id="candidateList" class="candidates"></div>
@@ -213,8 +213,8 @@ async function submitVote(ev){
   ev.preventDefault();
   const raw = document.getElementById('voterId').value.trim();
   const selected = Array.from(document.querySelectorAll('input[name="candidate"]:checked')).map(i=>i.value);
-  if(!raw || selected.length === 0){ document.getElementById('status').textContent = 'کدملی خود را وارد نمایید و حداقل یک کاندیدا را انتخاب نمایید'; return; }
-  if(selected.length > 3){ document.getElementById('status').textContent = 'تعداد کاندیداهای انتخابی شما بیش از حد مجاز است'; return; }
+  if(!raw || selected.length === 0){ document.getElementById('status').textContent = 'شماره تماس خود را وارد نمایید و حداقل یک کاندیدا را انتخاب نمایید'; return; }
+  if(selected.length > 9){ document.getElementById('status').textContent = 'تعداد کاندیداهای انتخابی شما بیش از حد مجاز است'; return; }
   const btn = document.getElementById('voteBtn'); btn.disabled = true; document.getElementById('status').textContent = 'Submitting...';
   try{
     const p_hash = await sha256Hex(raw);
@@ -237,5 +237,6 @@ subscribeRealtime();
 </script>
 </body>
 </html>
+
 
 
