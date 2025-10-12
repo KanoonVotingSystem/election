@@ -232,7 +232,7 @@ async function submitVote(ev){
   const raw = document.getElementById('voterId').value.trim();
   const selected = Array.from(document.querySelectorAll('input[name="candidate"]:checked')).map(i=>i.value);
   if(!raw || selected.length === 0){ document.getElementById('status').textContent = 'شماره تماس خود را وارد نمایید و حداقل یک کاندیدا را انتخاب نمایید'; return; }
-  if(selected.length > 9){ document.getElementById('status').textContent = 'تعداد کاندیداهای انتخابی شما بیش از حد مجاز است'; return; }
+  if(selected.length > 7){ document.getElementById('status').textContent = 'تعداد کاندیداهای انتخابی شما بیش از حد مجاز است'; return; }
   const btn = document.getElementById('voteBtn'); btn.disabled = true; document.getElementById('status').textContent = 'Submitting...';
   try{
     const p_hash = await sha256Hex(raw);
@@ -255,6 +255,7 @@ subscribeRealtime();
 </script>
 </body>
 </html>
+
 
 
 
