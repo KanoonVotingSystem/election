@@ -25,27 +25,58 @@
     .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); padding:var(--pad); border-radius:var(--radius); box-shadow:0 10px 40px rgba(2,6,23,.6)}
 
     /* Form */
-    label.field{display:flex;flex-direction:column;margin-bottom:12px}
-    label.field span{font-size:.85rem;color:var(--muted);margin-bottom:8px}
-    input[type=text] {
-      padding:10px;
-      border-radius:10px;
-      border:1px solid var(--accent);
-      background:rgba(255,255,255,0.05);
-      color:inherit;
-      outline:none;
-      transition:border 0.2s, box-shadow 0.2s;
-    }
-    input[type=text]::placeholder {
-      color:var(--muted);
-      opacity:0.85;
-      letter-spacing:0.5px;
-    }
-    input[type=text]:focus {
-      border-color:var(--accent-2);
-      box-shadow:0 0 6px var(--accent-2);
-      background:rgba(255,255,255,0.08);
-    }
+            /* YOUR EXACT CSS CONFIGS - FIXED */
+        label.field {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 12px;
+        }
+
+        label.field span {
+            font-size: .85rem;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--accent);
+            background: rgba(255,255,255,0.05);
+            color: inherit;
+            outline: none;
+            transition: border 0.2s, box-shadow 0.2s;
+            font-size: 16px;
+            /* FIXED: Ensure consistent direction and alignment */
+            direction: rtl;
+            text-align: right;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--muted);
+            opacity: 0.85;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-2);
+            box-shadow: 0 0 6px var(--accent-2);
+            background: rgba(255,255,255,0.08);
+        }
+
+        /* FIXED: Phone input now matches code input exactly */
+        input[name="phone"] {
+            direction: ltr;  /* Numbers LTR, but container RTL */
+            text-align: left;
+            unicode-bidi: embed;  /* Proper number display */
+        }
+
+        input[name="phone"]::placeholder {
+            direction: ltr;  /* Only placeholder LTR */
+            text-align: left;
+        }
 
     /* Force a single-column list of candidates */
     .candidates{display:flex;flex-direction:column;gap:8px;margin-top:8px}
@@ -83,13 +114,32 @@
       <div class="card">
         <h2>فرم رأی گیری</h2>
         <form id="voteForm">
-          <label class="field"><span>نام کاربری</span>
-  <input id="voterPhone" type="text" placeholder="شماره تماس" required />
-</label>
+          <label class="field">
+                <span>نام کاربری (شماره تلفن)</span>
+                <input 
+                    type="text" 
+                    name="phone" 
+                    placeholder="+98 912 345 6789" 
+                    required 
+                    maxlength="15"
+                    pattern="\+[0-9]{2,15}"
+                >
+            </label>
 
-<label class="field"><span>رمز عبور</span>
-  <input id="voterCode" type="password" placeholder="کد ارسالی را وارد نمایید" maxlength="8" required />
-</label>
+            <!-- 8-DIGIT CODE INPUT - NOW IDENTICAL -->
+            <label class="field">
+                <span>رمز عبور (8 رقمی)</span>
+                <input 
+                    type="text" 
+                    name="code" 
+                    placeholder="12345678" 
+                    required 
+                    maxlength="8"
+                    pattern="[0-9]{8}"
+                    inputmode="numeric"
+                >
+            </label>
+
 
 
           <div><div class="note">لیست کاندیداهای محترم</div>
@@ -290,6 +340,7 @@ subscribeRealtime();
 </script>
 </body>
 </html>
+
 
 
 
