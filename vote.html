@@ -83,7 +83,14 @@
       <div class="card">
         <h2>فرم رأی گیری</h2>
         <form id="voteForm">
-          <label class="field"><span>رأی گیری فقط با شماره تماس شما امکان پذیر است</span><input id="voterId" type="text" placeholder="شماره تماس خود را بدون رقم صفر اول اینجا وارد نمایید" autocomplete="one-time-code" required /></label>
+          <label class="field"><span>نام کاربری</span>
+  <input id="voterPhone" type="text" placeholder="شماره تماس" required />
+</label>
+
+<label class="field"><span>رمز عبور</span>
+  <input id="voterCode" type="password" placeholder="کد ارسالی را وارد نمایید" maxlength="8" required />
+</label>
+
 
           <div><div class="note">لیست کاندیداهای محترم</div>
             <div id="candidateList" class="candidates"></div>
@@ -229,23 +236,51 @@ function subscribeRealtime(){
 
 async function submitVote(ev){
   ev.preventDefault();
-  const raw = document.getElementById('voterId').value.trim();
-  const selected = Array.from(document.querySelectorAll('input[name="candidate"]:checked')).map(i=>i.value);
-  if(!raw || selected.length === 0){ document.getElementById('status').textContent = 'شماره تماس خود را وارد نمایید و حداقل یک کاندیدا را انتخاب نمایید'; return; }
-  if(selected.length > 7){ document.getElementById('status').textContent = 'تعداد کاندیداهای انتخابی شما بیش از حد مجاز است'; return; }
-  const btn = document.getElementById('voteBtn'); btn.disabled = true; document.getElementById('status').textContent = 'Submitting...';
+  // get phone and code fields instead of single ID
+  const phone = (document.getElementById('voterPhone') || {value:''}).value.trim();
+  const code  = (document.getElementById('voterCode')  || {value:''}).value.trim();
+
+  if(!phone || !code){
+    document.getElementById('status').textContent = 'رمز عبور 8 رقمی که برایتان ارسال شده است را وارد کنید';
+    return;
+  }
+
+  // candidate selections (same as before)
+  const selected = Array.from(document.querySelectorAll('input[name=\"candidate\"]:checked')).map(i=>i.value);
+  if(selected.length === 0){
+    document.getElementById('status').textContent = 'Pick at least one candidate.';
+    return;
+  }
+  if(selected.length > 7){
+    document.getElementById('status').textContent = 'شما میتوانید حداکثر 7 نامزد را انتخاب کنید';
+    return;
+  }
+
+  const btn = document.getElementById('voteBtn');
+  btn.disabled = true;
+  document.getElementById('status').textContent = 'Submitting...';
+
   try{
-    const p_hash = await sha256Hex(raw);
+    // combine phone and code with explicit separator
+    const raw = phone + code;
+const p_hash = await sha256Hex(raw);
+
+    // call the same RPC
     const { error } = await sb.rpc('vote_with_hash', { p_hash, p_candidates: selected });
     if(error) throw error;
-    document.getElementById('status').textContent = 'رأی شما با موفقیت ثبت شد';
+
+    document.getElementById('status').textContent = 'رای شما با موفقیت ثبت شد';
     document.getElementById('voteForm').reset();
     updateResults();
   }catch(e){
     console.error(e);
+    // show server error message; server now returns distinct messages
     document.getElementById('status').textContent = e.message || String(e);
-  }finally{ btn.disabled = false; }
+  }finally{
+    btn.disabled = false;
+  }
 }
+
 
 document.getElementById('voteForm').addEventListener('submit', submitVote);
 
@@ -255,6 +290,7 @@ subscribeRealtime();
 </script>
 </body>
 </html>
+
 
 
 
