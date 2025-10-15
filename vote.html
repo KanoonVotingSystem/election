@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -25,60 +26,50 @@
     .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px solid rgba(255,255,255,0.04); padding:var(--pad); border-radius:var(--radius); box-shadow:0 10px 40px rgba(2,6,23,.6)}
 
     /* Form */
-            /* YOUR EXACT CSS CONFIGS - FIXED */
-        label.field {
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 12px;
-        }
+    label.field {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 12px;
+    }
+    label.field span {
+        font-size: .85rem;
+        color: var(--muted);
+        margin-bottom: 8px;
+    }
+    input[type="text"] {
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid var(--accent);
+        background: rgba(255,255,255,0.05);
+        color: inherit;
+        outline: none;
+        transition: border 0.2s, box-shadow 0.2s;
+        font-size: 16px;
+        direction: rtl;
+        text-align: left;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    input[type="text"]::placeholder {
+        color: var(--muted);
+        opacity: 0.85;
+        letter-spacing: 0.5px;
+    }
+    input[type="text"]:focus {
+        border-color: var(--accent-2);
+        box-shadow: 0 0 6px var(--accent-2);
+        background: rgba(255,255,255,0.08);
+    }
+    input[name="phone"] {
+        direction: ltr;
+        text-align: left;
+        unicode-bidi: embed;
+    }
+    input[name="phone"]::placeholder {
+        direction: ltr;
+        text-align: left;
+    }
 
-        label.field span {
-            font-size: .85rem;
-            color: var(--muted);
-            margin-bottom: 8px;
-        }
-
-        input[type="text"] {
-            padding: 10px;
-            border-radius: 10px;
-            border: 1px solid var(--accent);
-            background: rgba(255,255,255,0.05);
-            color: inherit;
-            outline: none;
-            transition: border 0.2s, box-shadow 0.2s;
-            font-size: 16px;
-            /* FIXED: Ensure consistent direction and alignment */
-            direction: rtl;
-            text-align: left;
-            width: 100%;
-            box-sizing: border-box;
-        }
-
-        input[type="text"]::placeholder {
-            color: var(--muted);
-            opacity: 0.85;
-            letter-spacing: 0.5px;
-        }
-
-        input[type="text"]:focus {
-            border-color: var(--accent-2);
-            box-shadow: 0 0 6px var(--accent-2);
-            background: rgba(255,255,255,0.08);
-        }
-
-        /* FIXED: Phone input now matches code input exactly */
-        input[name="phone"] {
-            direction: ltr;  /* Numbers LTR, but container RTL */
-            text-align: left;
-            unicode-bidi: embed;  /* Proper number display */
-        }
-
-        input[name="phone"]::placeholder {
-            direction: ltr;  /* Only placeholder LTR */
-            text-align: left;
-        }
-
-    /* Force a single-column list of candidates */
     .candidates{display:flex;flex-direction:column;gap:8px;margin-top:8px}
     .cand{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02);cursor:pointer}
     .cand input{width:18px;height:18px}
@@ -90,7 +81,6 @@
 
     .status{min-height:20px}
 
-    /* Sidebar */
     .stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
     .stat{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;text-align:center}
     .stat .num{font-size:1.2rem;font-weight:800}
@@ -110,38 +100,34 @@
     </header>
 
     <div class="grid">
-      <!-- Left: voting card -->
       <div class="card">
         <h2>فرم رأی گیری</h2>
         <form id="voteForm">
           <label class="field">
-                <span>نام کاربری (شماره تلفن)</span>
-                <input 
-                    type="text" 
-                    name="phone" 
-                    placeholder="09123456789" 
-                    required 
-                    maxlength="11"
-                    pattern="[0-9]{11}"
-                    inputmode="numeric"
-                >
-            </label>
+            <span>نام کاربری (شماره تلفن)</span>
+            <input 
+                type="text" 
+                name="phone" 
+                placeholder="09123456789" 
+                required 
+                maxlength="11"
+                pattern="[0-9]{11}"
+                inputmode="numeric"
+            >
+          </label>
 
-            <!-- 8-DIGIT CODE INPUT - NOW IDENTICAL -->
-            <label class="field">
-                <span>رمز عبور (8 رقمی)</span>
-                <input 
-                    type="text" 
-                    name="code" 
-                    placeholder="12345678" 
-                    required 
-                    maxlength="8"
-                    pattern="[0-9]{8}"
-                    inputmode="numeric"
-                >
-            </label>
-
-
+          <label class="field">
+              <span>رمز عبور (8 رقمی)</span>
+              <input 
+                  type="text" 
+                  name="code" 
+                  placeholder="12345678" 
+                  required 
+                  maxlength="8"
+                  pattern="[0-9]{8}"
+                  inputmode="numeric"
+              >
+          </label>
 
           <div><div class="note">لیست کاندیداهای محترم</div>
             <div id="candidateList" class="candidates"></div>
@@ -156,7 +142,6 @@
         </form>
       </div>
 
-      <!-- Right: live results -->
       <div class="card sidebar-card">
         <h3>نتایج زنده</h3>
         <div class="stat-grid">
@@ -180,16 +165,13 @@
   </div>
 
 <script>
-// ----- CONFIG: paste your Supabase info -----
 const SUPABASE_URL = 'https://mbkbiwzlzwunubdyslmc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ia2Jpd3psend1bnViZHlzbG1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxOTgxMzIsImV4cCI6MjA3Mzc3NDEzMn0.894O4z994vQ60g4m5Csr-0TbgiH3D8hlszNY0sUMIRU';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-// -------------------------------------------
 
 let candidates = [];
 let chart;
 
-// extract trailing number from candidate name, e.g. "candidate 12" => 12
 function trailingNumber(name){
   const m = name.match(/(\d+)\s*$/);
   return m ? parseInt(m[1],10) : null;
@@ -209,7 +191,6 @@ function el(tag, attrs={}, children=[]) {
 }
 
 function sortCandidatesArray(arr){
-  // sort by trailing number if present, otherwise by name
   return arr.slice().sort((a,b)=>{
     const na = trailingNumber(a.name);
     const nb = trailingNumber(b.name);
@@ -257,7 +238,6 @@ function renderChart(){
 }
 
 async function loadCandidates(){
-  // fetch candidates and sort client-side; ordering by name might be alphabetic, so we apply numeric sort
   const { data, error } = await sb.from('candidates').select('*');
   if(error){ console.error(error); return; }
   candidates = data || [];
@@ -273,33 +253,30 @@ async function fetchStats(){
 async function updateResults(){
   const stats = await fetchStats();
   renderKPIs(stats);
-  // refresh candidate data (votes) then render
   const { data } = await sb.from('candidates').select('*');
   if(data) candidates = data;
-  //renderResultsTable(stats);
-  //renderChart();
 }
 
 function subscribeRealtime(){
   sb.channel('candidates_rt').on('postgres_changes', { event:'*', schema:'public', table:'candidates' }, () => updateResults()).subscribe();
-  sb.channel('state_rt').on('postgres_changes', { event:'*', schema:'public', table:'election_state' }, () => { /* server enforces open/closed */ }).subscribe();
+  sb.channel('state_rt').on('postgres_changes', { event:'*', schema:'public', table:'election_state' }, () => { }).subscribe();
 }
 
 async function submitVote(ev){
   ev.preventDefault();
-  // get phone and code fields instead of single ID
-  const phone = (document.getElementById('voterPhone') || {value:''}).value.trim();
-  const code  = (document.getElementById('voterCode')  || {value:''}).value.trim();
+  
+  // ✅ FIXED: Use name attributes instead of wrong IDs
+  const phone = document.querySelector('input[name="phone"]').value.trim();
+  const code  = document.querySelector('input[name="code"]').value.trim();
 
   if(!phone || !code){
-    document.getElementById('status').textContent = 'رمز عبور 8 رقمی که برایتان ارسال شده است را وارد کنید';
+    document.getElementById('status').textContent = 'رمز عبور یا شماره تماس شما اشتباه است';
     return;
   }
 
-  // candidate selections (same as before)
-  const selected = Array.from(document.querySelectorAll('input[name=\"candidate\"]:checked')).map(i=>i.value);
+  const selected = Array.from(document.querySelectorAll('input[name="candidate"]:checked')).map(i=>i.value);
   if(selected.length === 0){
-    document.getElementById('status').textContent = 'Pick at least one candidate.';
+    document.getElementById('status').textContent = 'لطفا حداقل یک کاندیدا را ';
     return;
   }
   if(selected.length > 7){
@@ -312,44 +289,28 @@ async function submitVote(ev){
   document.getElementById('status').textContent = 'Submitting...';
 
   try{
-    // combine phone and code with explicit separator
+    // ✅ Phone + Code = Raw input for hash (matches backend)
     const raw = phone + code;
-const p_hash = await sha256Hex(raw);
+    const p_hash = await sha256Hex(raw);
 
-    // call the same RPC
     const { error } = await sb.rpc('vote_with_hash', { p_hash, p_candidates: selected });
     if(error) throw error;
 
-    document.getElementById('status').textContent = 'رای شما با موفقیت ثبت شد';
+    document.getElementById('status').textContent = '✅ رای شما با موفقیت ثبت شد';
     document.getElementById('voteForm').reset();
     updateResults();
   }catch(e){
     console.error(e);
-    // show server error message; server now returns distinct messages
     document.getElementById('status').textContent = e.message || String(e);
   }finally{
     btn.disabled = false;
   }
 }
 
-
 document.getElementById('voteForm').addEventListener('submit', submitVote);
 
-// boot
 loadCandidates().then(updateResults);
 subscribeRealtime();
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
