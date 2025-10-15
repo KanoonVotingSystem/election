@@ -122,7 +122,8 @@
                     placeholder="09123456789" 
                     required 
                     maxlength="11"
-                    pattern="\+[0-9]{11}"
+                    pattern="[0-9]{11}"
+                    inputmode="numeric"
                 >
             </label>
 
@@ -130,7 +131,7 @@
             <label class="field">
                 <span>رمز عبور (8 رقمی)</span>
                 <input 
-                    type="password" 
+                    type="text" 
                     name="code" 
                     placeholder="12345678" 
                     required 
@@ -340,6 +341,7 @@ subscribeRealtime();
 </script>
 </body>
 </html>
+
 
 
 
